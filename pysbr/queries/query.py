@@ -7,7 +7,6 @@ from functools import wraps
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 import pandas as pd
-from fake_useragent import UserAgent
 
 import pysbr.utils as utils
 from pysbr.config.config import Config
@@ -15,7 +14,6 @@ from pysbr.config.config import Config
 
 class Query:
     """Base class for making queries on the SBR GraphQL endpoint.
-
     This class should not be directly instantiated; use the subclasses defined for each
     query.
     """
@@ -33,31 +31,27 @@ class Query:
         self._arguments = utils.load_yaml((utils.build_yaml_path("arguments")))
         self._fields = utils.load_yaml((utils.build_yaml_path("fields")))
 
-        ua = UserAgent()
         headers = {
-            "User-Agent": ua.random,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36",
             "Content-Type": "application/json",
             "Accept": "application/json, text/plain, */*",
             "Accept-Encoding": "gzip, deflate, br",
             "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
             "Connection": "keep-alive",
-            "Host": "www.sportsbookreview.com",
-            "Referer": "https://www.sportsbookreview.com/betting-odds/",
+            "Origin": "https://www.bookmakersreview.com",
+            "Referer": "https://www.bookmakersreview.com/betting-odds/",
         }
         transport = RequestsHTTPTransport(
-            url="https://www.sportsbookreview.com/ms-odds-v2/odds-v2-service",
+            url="https://ms.virginia.us-east-1.bookmakersreview.com/ms-odds-v2/odds-v2-service",
             headers=headers,
         )
         self.client = Client(transport=transport, fetch_schema_from_transport=False)
 
     def typecheck(f: Callable) -> Callable:
         """Decorator for type checking arguments passed to subclass __init__ methods.
-
         The purpose of decorating the subclass __init__ methods is to avoid making
         invalid queries on the GraphQL endpoint.
-
         This method is only verified to work with List, Union, and primitive types.
-
         Raises:
             TypeError: If argument does not match expected type.
         """
@@ -111,10 +105,8 @@ class Query:
 
     def _build_args(self, arg_str: str, args: Dict[str, Any]) -> Optional[str]:
         """Build the argument string that gets inserted into a query string.
-
         arg_str should be a string with substitution placeholders matching each arg in
         args.
-
         Raises:
             KeyError: If keys in args do not match placeholders in arg_str.
             ValueError: If arg_str is not a valid Template string.
@@ -128,10 +120,8 @@ class Query:
         self, q_name: str, q_fields: Optional[str] = None, q_args: Optional[str] = None
     ) -> str:
         """Build up the GraphQL query string from given parameters.
-
         q_args should be the arguments to the query, with the values already filled in
         (i.e. query._build_args() should be called first).
-
         Returns:
             The completed query string ready to be executed.
         """
@@ -164,7 +154,6 @@ class Query:
 
     def _get_args(self, k: str) -> str:
         """Get the value of key k from the arguments dictionary.
-
         Raises:
             KeyError: If k is not a key in the arguments dict.
         """
@@ -172,7 +161,6 @@ class Query:
 
     def _get_fields(self, k: str) -> str:
         """Get the value of key k from the fields dictionary.
-
         Raises:
             KeyError: If k is not a key in the fields dict.
         """
@@ -180,7 +168,6 @@ class Query:
 
     def _execute_query(self, q: str) -> Dict:
         """Execute the GraphQL query specified by the string q.
-
         Raises:
             gql.GraphQLSyntaxError: If the query string is structured improperly.
             gql.Exception: If the server raises an error during execution of the query.
@@ -195,7 +182,6 @@ class Query:
         q_args: Optional[Dict[str, Any]] = None,
     ) -> Dict:
         """Build query out of parameters, then execute it.
-
         Raises:
             gql.GraphQLSyntaxError: If the query string is structured improperly.
             gql.Exception: If the server raises an error during execution of the query.
@@ -209,7 +195,6 @@ class Query:
 
     def _find_data(self):
         """Return a reference to to the relevant part of the query response.
-
         self._subpath_keys is a list of strings, which are a sequence of keys pointing
         to the data.
         """
@@ -222,7 +207,6 @@ class Query:
 
     def _translate_dict(self, d: Dict) -> Dict:
         """Use translations from Config class to translate GraphQL response.
-
         This method is used by self.list() and self.dataframe() in order to translate
         field names from SBR into English words. Timestamps are converted into ISO
         strings.
@@ -280,7 +264,6 @@ class Query:
 
     def _copy_and_translate_data(self) -> List[Dict]:
         """Translate SBR fields in GraphQL response, and return a copy.
-
         This method is used by self.list() and self.dataframe(). self._translated
         caches the translated data.
         """
@@ -303,12 +286,9 @@ class Query:
 
     def id(self) -> Optional[int]:
         """Get the first id returned from the query response.
-
         The type of id returned depends on the Query implementation. For example,
         calling this method on queries returning events will return a list of event ids.
-
         If there are no ids, None is returned.
-
         Raises:
             NotImplementedError: If the Query object does not have a default return id
                 type.
@@ -321,12 +301,9 @@ class Query:
 
     def ids(self) -> List[int]:
         """Get a list of ids from the query response.
-
         The type of id returned depends on the Query implementation. For example,
         calling this method on queries returning events will return a list of event ids.
-
         This method is useful for queries accepting lists of ids as arguments.
-
         Raises:
             NotImplementedError: If the Query object does not have a default return id
                 type.
@@ -345,7 +322,6 @@ class Query:
 
     def list(self) -> List[Dict[str, Union[str, List, Dict]]]:
         """Get a list of translated elements returned from the query.
-
         Each element in the response is a dict with fields requested in the query and
         the element's values for those fields. The fields are translated.
         """
@@ -357,13 +333,11 @@ class Query:
 
     def dataframe(self) -> pd.DataFrame:
         """Get a dataframe of elements returned from the query.
-
         Each element in the response is a dict with fields requested in the query and
         the element's values for those fields. The fields are translated, and if the
         elements are nested, it is attempted to flatten them using self._sublist_keys,
         which is a list of keys expected to be in each element that have values that
         are lists.
-
         If the elements cannot be flattened, a dataframe of the nested elements is
         returned.
         """
